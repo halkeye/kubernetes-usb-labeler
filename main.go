@@ -7,8 +7,10 @@ import (
 	"io/ioutil"
 	"os"
 	"strings"
+	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -17,12 +19,12 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/signals"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/go-logr/logr"
 	"github.com/google/gousb"
@@ -44,6 +46,7 @@ func (r *reconcileNodeLabels) Reconcile(request reconcile.Request) (reconcile.Re
 	log := r.log.WithValues("request", request)
 
 	node := &corev1.Node{}
+	log.Info(fmt.Sprintf("Namespace: %s | Name: %s | NamespacedName: %s", request.Namespace, request.Name, request.NamespacedName))
 	err := r.client.Get(context.TODO(), request.NamespacedName, node)
 	if errors.IsNotFound(err) {
 		log.Error(nil, "Could not find Node")
@@ -171,7 +174,7 @@ func main() {
 	// Setup a Manager
 	entryLog.Info("setting up manager")
 	mgr, err := manager.New(config.GetConfigOrDie(), manager.Options{
-		MetricsBindAddress: "0",
+		MetricsBindAddress: ":3000",
 	})
 	if err != nil {
 		entryLog.Error(err, "unable to set up overall controller manager")
@@ -191,7 +194,7 @@ func main() {
 	}
 
 	// laballer only respond to event about the node it is on by matching hostname
-	b, err := ioutil.ReadFile("/labeller/hostname")
+	b, err := ioutil.ReadFile("/etc/hostname")
 	if err != nil {
 		entryLog.Error(err, "Cannot read hostname")
 	}
@@ -200,6 +203,8 @@ func main() {
 	pred := predicate.Funcs{
 		// Create returns true if the Create event should be processed
 		CreateFunc: func(e event.CreateEvent) bool {
+			// entryLog.Info(fmt.Sprintf("predicate CreateFunc triggered: %s -- %s", e.Meta.GetName(), e.Meta.GetNamespace()))
+
 			if hostname == e.Meta.GetName() {
 				return true
 			}
@@ -208,17 +213,19 @@ func main() {
 
 		// Delete returns true if the Delete event should be processed
 		DeleteFunc: func(e event.DeleteEvent) bool {
+			// entryLog.Info(fmt.Sprintf("predicate DeleteFunc triggered: %s -- %s", e.Meta.GetName(), e.Meta.GetNamespace()))
 			return false
 		},
 
 		// Update returns true if the Update event should be processed
 		UpdateFunc: func(e event.UpdateEvent) bool {
+			// entryLog.Info(fmt.Sprintf("predicate UpdateFunc triggered: %s -- %s", e.MetaNew.GetName(), e.MetaNew.GetNamespace()))
 			return false
 		},
 
 		// Generic returns true if the Generic event should be processed
 		GenericFunc: func(e event.GenericEvent) bool {
-			//entryLog.Info("predicate generic triggered: ")
+			// entryLog.Info("predicate GenericFunc triggered: ")
 			return false
 		},
 	}

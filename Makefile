@@ -62,6 +62,10 @@ docker-build: test
 docker-push:
 	docker push ${IMG}
 
+# Push the docker image
+docker-run: docker-build
+	docker run -it --rm --name usb-labeler-controller -v /sys:/sys -v /dev:/dev -v /etc:/labeller ${IMG} -development
+
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:
