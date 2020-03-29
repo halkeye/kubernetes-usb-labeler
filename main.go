@@ -80,16 +80,6 @@ func (r *reconcileNodeLabels) Reconcile(request reconcile.Request) (reconcile.Re
 	return reconcile.Result{}, nil
 }
 
-// Bus 001 Device 005: ID 046d:082d Logitech, Inc. HD Pro Webcam C920
-type deviceInfo struct {
-	ID      string
-	Bus     int
-	Label   string
-	Vendor  string
-	Address int
-	Product string
-}
-
 func generateLabels() map[string]string {
 	entryLog := log.WithName("entrypoint")
 	results := make(map[string]string)
@@ -100,26 +90,7 @@ func generateLabels() map[string]string {
 
 	// OpenDevices is used to find the devices to open.
 	devs, err := ctx.OpenDevices(func(desc *gousb.DeviceDesc) bool {
-		// The usbid package can be used to print out human readable information.
-		// fmt.Printf("%03d.%03d %s:%s %s\n", desc.Bus, desc.Address, desc.Vendor, desc.Product, usbid.Describe(desc))
-		// After inspecting the descriptor, return true or false depending on whether
-		// the device is "interesting" or not.  Any descriptor for which true is returned
-		// opens a Device which is retuned in a slice (and must be subsequently closed).
-		// foo := &deviceInfo{
-		// 	ID:      fmt.Sprintf("%d:%d", desc.Device.Major(), desc.Device.Minor()),
-		// 	Bus:     desc.Bus,
-		// 	Label:   usbid.Describe(desc),
-		// 	Address: desc.Address,
-		// 	Product: desc.Product.String(),
-		// 	Vendor:  desc.Vendor.String(),
-		// }
-		// json, err := json.MarshalIndent(foo, "", "  ")
-		// if err != nil {
-		// 	entryLog.Error(err, "Error trying to marshal")
-		// }
-		// fmt.Println(string(json))
-		results[fmt.Sprintf("g4v.dev/usb.%s.%s", desc.Product.String(), desc.Vendor.String())] = "true"
-
+		results[fmt.Sprintf("g4v.dev/usb.%s.%s", desc.Vendor.String(), desc.Product.String())] = "true"
 		return false
 	})
 
