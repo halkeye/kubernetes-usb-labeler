@@ -135,10 +135,45 @@ func generateLabels() map[string]string {
 		entryLog.Error(err, "error listing usb devices")
 		os.Exit(1)
 	}
+	entryLog.Info(fmt.Sprintf("generateLabels: %s", results))
 	return results
 }
 
 var gitDescribe string
+
+func setInterval(someFunc func(), interval time.Duration, async bool) chan bool {
+	// Setup the ticket and the channel to signal
+	// the ending of the interval
+	ticker := time.NewTicker(interval)
+	clear := make(chan bool)
+
+	// Put the selection in a go routine
+	// so that the for loop is none blocking
+	go func() {
+		for {
+
+			select {
+			case <-ticker.C:
+				if async {
+					// This won't block
+					go someFunc()
+				} else {
+					// This will block
+					someFunc()
+				}
+			case <-clear:
+				ticker.Stop()
+				return
+			}
+
+		}
+	}()
+
+	// We return the channel so we can pass in
+	// a value to it to clear the interval
+	return clear
+
+}
 
 func main() {
 	flag.Usage = func() {
@@ -221,6 +256,15 @@ func main() {
 		entryLog.Error(err, "unable to watch Node")
 		os.Exit(1)
 	}
+
+	entryLog.Info("starting interval")
+	/* Until such time as https://github.com/google/gousb/issues/8 gets merged, just poll every minute or so */
+	setInterval(func() {
+		req := &reconcile.Request{
+			NamespacedName: types.NamespacedName{Name: hostname, Namespace: ""},
+		}
+		c.Reconcile(*req)
+	}, 1*time.Minute, false)
 
 	entryLog.Info("starting manager")
 	if err := mgr.Start(signals.SetupSignalHandler()); err != nil {
