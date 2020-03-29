@@ -154,6 +154,7 @@ func main() {
 		flag.PrintDefaults()
 	}
 	dryRun := flag.Bool("dry-run", false, "Just output labels")
+	development := flag.Bool("development", false, "Just output labels")
 
 	flag.Parse()
 
@@ -164,7 +165,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	logf.SetLogger(zap.Logger(false))
+	logf.SetLogger(zap.Logger(*development))
 	entryLog := log.WithName("entrypoint")
 
 	// Setup a Manager
