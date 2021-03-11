@@ -10,7 +10,7 @@ I don't know enough about usb identifiers nor kubernetes nodes to know if my cur
 # This is a configuration example for the node labeller which includes
 # ClusterRole and ClusterRoleBinding definitions, as well as the 
 # DeamonSet configuration that deploys the actual node labeller
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: usb-labeler
@@ -19,7 +19,7 @@ rules:
   resources: ["nodes"]
   verbs: ["watch", "get", "list", "update"]
 ---
-apiVersion: rbac.authorization.k8s.io/v1beta1
+apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: labeller
