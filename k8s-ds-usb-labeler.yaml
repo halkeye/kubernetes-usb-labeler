@@ -1,12 +1,3 @@
-# usb-labeler-controller
-
-Quick hack to add labels for each usb device on a node, to help with using affinity to pin nodes to nodes with devices
-
-I don't know enough about usb identifiers nor kubernetes nodes to know if my current implementation is a good plan, but it does work for me
-
-## Installation
-
-```
 # This is a configuration example for the node labeller which includes
 # ClusterRole and ClusterRoleBinding definitions, as well as the 
 # DeamonSet configuration that deploys the actual node labeller
@@ -91,9 +82,3 @@ spec:
         - name: etc
           hostPath:
             path: /etc
-```
-
-## Upgrades
-
-* try out https://godoc.org/github.com/chipaca/snappy/interfaces/hotplug to do it with hotplug instead of polling
-

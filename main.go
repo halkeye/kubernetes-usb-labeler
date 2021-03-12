@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 	"time"
@@ -194,18 +193,14 @@ func main() {
 	}
 
 	// laballer only respond to event about the node it is on by matching hostname
-	b, err := ioutil.ReadFile("/etc/hostname")
-	if err != nil {
-		entryLog.Error(err, "Cannot read hostname")
-	}
-	hostname := strings.TrimSpace(string(b))
+	nodeName := getNodeName()
 
 	pred := predicate.Funcs{
 		// Create returns true if the Create event should be processed
 		CreateFunc: func(e event.CreateEvent) bool {
 			// entryLog.Info(fmt.Sprintf("predicate CreateFunc triggered: %s -- %s", e.Meta.GetName(), e.Meta.GetNamespace()))
 
-			if hostname == e.Meta.GetName() {
+			if nodeName == e.Meta.GetName() {
 				return true
 			}
 			return false
@@ -240,7 +235,7 @@ func main() {
 	/* Until such time as https://github.com/google/gousb/issues/8 gets merged, just poll every minute or so */
 	setInterval(func() {
 		req := &reconcile.Request{
-			NamespacedName: types.NamespacedName{Name: hostname, Namespace: ""},
+			NamespacedName: types.NamespacedName{Name: nodeName, Namespace: ""},
 		}
 		c.Reconcile(*req)
 	}, 1*time.Minute, false)
@@ -250,4 +245,17 @@ func main() {
 		entryLog.Error(err, "unable to run manager")
 		os.Exit(1)
 	}
+}
+
+func getNodeName() (string, error) {
+	// Within the Kubernetes Pod, the hostname provides the Pod name, rather than the node name, so we pass in the
+	// node name via the NODE_NAME environment variable instead.
+	nodeName := os.Getenv("NODE_NAME")
+	if len(nodeName) > 0 {
+		return nodeName, nil
+	}
+
+	// If the NODE_NAME environment variable is unset, fall back on hostname matching (e.g. when running outside of
+	// a Kubernetes deployment).
+	return os.Hostname()
 }
