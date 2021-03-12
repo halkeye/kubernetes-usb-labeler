@@ -193,7 +193,11 @@ func main() {
 	}
 
 	// laballer only respond to event about the node it is on by matching hostname
-	nodeName := getNodeName()
+	nodeName, err := getNodeName()
+	if err != nil {
+		entryLog.Error(err, "unable to get the node's name")
+		os.Exit(1)
+	}
 
 	pred := predicate.Funcs{
 		// Create returns true if the Create event should be processed
